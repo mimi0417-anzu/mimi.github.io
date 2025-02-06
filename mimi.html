@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimi & 你的小窝</title>
+    <style>
+#todo-container {
+    margin-top: 30px;
+}
+
+#todo-title {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+}
+
+#todo-input {
+    width: 80%;
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ff85a2;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+}
+
+#add-todo-btn {
+    background-color: #ff85a2;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+}
+
+#add-todo-btn:hover {
+    background-color: #d63384;
+}
+
+#todo-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+#todo-list li {
+    background-color: #ffe4ec;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#todo-list li.completed {
+    text-decoration: line-through;
+    background-color: #f1f1f1;
+}
+
+        html, body {
+            height: 100%;
+            overflow: auto;
+        }
+
+        body {
+            background-color: #ffe4ec;
+            font-family: "Arial", sans-serif;
+            text-align: center;
+            color: #d63384;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-top: 20px;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .language-switch {
+            margin: 10px;
+        }
+        button {
+            background-color: #ff85a2;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #d63384;
+        }
+        #message-board {
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+        .message {
+            background: #ffdde1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+        .sticker {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 5px;
+        }
+        #message-input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ff85a2;
+            border-radius: 5px;
+            resize: vertical;
+            font-family: Arial, sans-serif;
+        }
+        .message span {
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">Mimi & 你的小窝</h1>
+    
+    <!-- 语言切换按钮 -->
+    <div class="language-switch">
+        <button onclick="switchLanguage('zh')">中文</button>
+        <button onclick="switchLanguage('ja')">日本語</button>
+    </div>
+
+    <!-- 显示/隐藏留言板按钮 -->
+    <button onclick="toggleMessageBoard()" id="toggle-board-btn">留言板</button>
+
+<!-- To-Do List Section -->
+<div class="container" id="todo-container">
+    <h2 id="todo-title">To-Do List</h2>
+    <input type="text" id="todo-input" placeholder="输入待办事项..." />
+    <button id="add-todo-btn" onclick="addTodo()">添加任务</button>
+    <ul id="todo-list"></ul>
+</div>
+    <div class="container" id="message-container">
+        <h2 id="message-title">留言板</h2>
+        <textarea id="message-input" placeholder="写下你的留言..." rows="2"></textarea>
+        <button id="send-btn" onclick="addMessage()">发送</button>
+        <div id="message-board"></div>
+
+        <!-- 分页按钮 -->
+        <div>
+            <button id="prev-btn" onclick="prevPage()">上一页</button>
+            <button id="next-btn" onclick="nextPage()">下一页</button>
+        </div>
+        <div>第 <span id="current-page">1</span> 页</div>
+    </div>
+<script>
+        const stickers = ["🐻", "🐰", "⭐", "❤️", "🍓", "🌸"];
+        const maxMessages = 100;
+        let currentPage = 1;
+        const messagesPerPage = 10;
+// To-Do List 功能
+function addTodo() {
+    let input = document.getElementById("todo-input");
+    let todoText = input.value.trim();
+    if (todoText === "") return;
+
+    let todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+    // 新任务对象
+    let todo = {
+        text: todoText,
+        completed: false
+    };
+
+    todos.push(todo);
+    localStorage.setItem("todos", JSON.stringify(todos));
+
+    input.value = ""; // 清空输入框
+    loadTodos(); // 重新加载任务列表
+}
+
+function loadTodos() {
+    let todoList = document.getElementById("todo-list");
+    todoList.innerHTML = ""; // 清空当前列表
+
+    let todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+    todos.forEach((todo, index) => {
+        let li = document.createElement("li");
+        li.classList.toggle("completed", todo.completed);
+
+        let span = document.createElement("span");
+        span.textContent = todo.text;
+        li.appendChild(span);
+
+        // 完成按钮
+        let completeBtn = document.createElement("button");
+        completeBtn.textContent = "完成";
+        completeBtn.onclick = () => toggleComplete(index);
+        li.appendChild(completeBtn);
+
+        // 删除按钮
+        let deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "删除";
+        deleteBtn.onclick = () => deleteTodo(index);
+        li.appendChild(deleteBtn);
+
+        todoList.appendChild(li);
+    });
+}
+
+// 标记为完成
+function toggleComplete(index) {
+    let todos = JSON.parse(localStorage.getItem("todos")) || [];
+    todos[index].completed = !todos[index].completed;
+    localStorage.setItem("todos", JSON.stringify(todos));
+    loadTodos(); // 重新加载任务列表
+}
+
+// 删除任务
+function deleteTodo(index) {
+    let todos = JSON.parse(localStorage.getItem("todos")) || [];
+    todos.splice(index, 1);
+    localStorage.setItem("todos", JSON.stringify(todos));
+    loadTodos(); // 重新加载任务列表
+}
+
+// 页面加载时加载任务列表
+window.onload = () => {
+    loadTodos();
+};
+
+        // 切换语言
+        function switchLanguage(lang) {
+            if (lang === "zh") {
+                document.getElementById("title").textContent = "Mimi & 你的小窝";
+                document.getElementById("message-title").textContent = "留言板";
+                document.getElementById("message-input").placeholder = "写下你的留言...";
+                document.getElementById("send-btn").textContent = "发送";
+                document.getElementById("toggle-board-btn").textContent = "留言板";
+                document.getElementById("prev-btn").textContent = "上一页";
+                document.getElementById("next-btn").textContent = "下一页";
+            } else if (lang === "ja") {
+                document.getElementById("title").textContent = "Mimi & あなたの小さな家";
+                document.getElementById("message-title").textContent = "掲示板";
+                document.getElementById("message-input").placeholder = "メッセージを入力してください...";
+                document.getElementById("send-btn").textContent = "送信";
+                document.getElementById("toggle-board-btn").textContent = "掲示板";
+                document.getElementById("prev-btn").textContent = "前へ";
+                document.getElementById("next-btn").textContent = "次へ";
+            }
+        }
+
+        // 切换留言板显示
+        function toggleMessageBoard() {
+            let board = document.getElementById("message-board");
+            board.style.display = board.style.display === "none" ? "block" : "none";
+            loadMessages();
+        }
+
+        // 加载留言
+        function loadMessages() {
+            let messageBoard = document.getElementById("message-board");
+            messageBoard.innerHTML = "";
+            let messages = JSON.parse(localStorage.getItem("messages")) || [];
+
+            const startIndex = (currentPage - 1) * messagesPerPage;
+            const endIndex = startIndex + messagesPerPage;
+            const currentPageMessages = messages.slice(startIndex, endIndex);
+
+            currentPageMessages.forEach(data => {
+                let messageDiv = document.createElement("div");
+                messageDiv.classList.add("message");
+
+                let stickerSpan = document.createElement("span");
+                stickerSpan.classList.add("sticker");
+                stickerSpan.textContent = data.sticker;
+
+                let textSpan = document.createElement("span");
+                textSpan.textContent = data.text;
+
+                let timestampSpan = document.createElement("span");
+                timestampSpan.classList.add("timestamp");
+                timestampSpan.textContent = data.timestamp;
+
+                messageDiv.appendChild(stickerSpan);
+                messageDiv.appendChild(textSpan);
+                messageDiv.appendChild(timestampSpan);
+                messageBoard.appendChild(messageDiv);
+            });
+
+            document.getElementById("prev-btn").style.display = currentPage > 1 ? "inline-block" : "none";
+            document.getElementById("next-btn").style.display = currentPage * messagesPerPage < messages.length ? "inline-block" : "none";
+            document.getElementById("current-page").textContent = currentPage;
+        }
+// 获取格式化的时间戳
+        function getFormattedTimestamp() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // 发送留言
+        function addMessage() {
+            let input = document.getElementById("message-input");
+            let messageText = input.value.trim();
+            if (messageText === "") return;
+
+            let messages = JSON.parse(localStorage.getItem("messages")) || [];
+
+            if (messages.length >= maxMessages) {
+                messages.pop();
+            }
+
+            let randomSticker = stickers[Math.floor(Math.random() * stickers.length)];
+            let timestamp = getFormattedTimestamp();
+
+            messages.unshift({ text: messageText, sticker: randomSticker, timestamp: timestamp });
+            localStorage.setItem("messages", JSON.stringify(messages));
+            input.value = "";
+            currentPage = 1;
+            loadMessages();
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadMessages();
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            let messages = JSON.parse(localStorage.getItem("messages")) || [];
+            if (currentPage * messagesPerPage < messages.length) {
+                currentPage++;
+                loadMessages();
+            }
+        }
+
+        window.onload = loadMessages;
+    </script>
+</body>
+</html>
